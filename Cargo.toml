@@ -1,0 +1,11 @@
+[package]
+name = "bare_metal_riscv"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+riscv = "0.10.1"
+
+[profile.release]
+opt-level = 3
+lto = true
