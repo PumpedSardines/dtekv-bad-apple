@@ -6,11 +6,12 @@ const DMA_ADDR: *mut u32 = 0x04000100 as *mut u32;
 
 static mut CURRENT_BACK_BUFFER: *mut u8 = core::ptr::null_mut();
 
-/// Returns if the VGA is swapping buffers
+/// Returns if the VGA can swap buffers
 fn swapping() -> bool {
     unsafe {
         // Status address
-        *(DMA_ADDR.add(4)) & 0x1 != 0
+        let addr = DMA_ADDR.add(3);
+        core::ptr::read_volatile(addr) & 0x1 != 0
     }
 }
 
@@ -19,7 +20,7 @@ pub fn swap_buffers() {
 
     unsafe {
         // Swap buffers
-        *(DMA_ADDR) = 0x0;
+        core::ptr::write_volatile(DMA_ADDR, 0x0);
 
         CURRENT_BACK_BUFFER = if CURRENT_BACK_BUFFER == BACK_BUFFER_ADDR {
             FRONT_BUFFER_ADDR
@@ -59,6 +60,6 @@ pub fn set_pixel(x: i32, y: i32, color: Color) {
     }
 
     unsafe {
-        *(CURRENT_BACK_BUFFER.add((y * SCREEN_WIDTH + x).try_into().unwrap())) = color.0;
+        core::ptr::write_volatile(CURRENT_BACK_BUFFER.add((y * SCREEN_WIDTH + x).try_into().unwrap()), color.0);
     }
 }

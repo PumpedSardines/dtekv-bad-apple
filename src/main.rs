@@ -11,8 +11,8 @@ const PIXELS: &[u8] = include_bytes!("out.bin");
 
 #[no_mangle]
 pub extern "C" fn main() -> ! {
-    io::uart::print("Bad Apple, but it's on a DTEK-V chip!\n");
-    io::uart::print("Written in Rust, check it out: ");
+    io::uart::print("Bad Apple, but it's on the DTEK-V chip!\n");
+    io::uart::print("Written in Rust, check it out: https://github.com/PumpedSardines/dtekv-bad-apple");
     io::uart::print("\n");
 
     io::vga::init();
@@ -34,7 +34,7 @@ pub extern "C" fn main() -> ! {
             rendered_frames += 1;
             io::vga::swap_buffers();
             // Remove some MS due to all the writing code taking some time
-            utils::delay(1000 / 12 - 10);
+            utils::delay(1000 / 12 - 20);
             global_index = 0;
         }
 

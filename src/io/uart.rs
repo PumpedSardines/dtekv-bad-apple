@@ -5,8 +5,8 @@ const JTAG_CTRL: *mut u32 = 0x04000044 as *mut u32;
 
 pub fn printc(c: u8) {
     unsafe {
-        while ((*JTAG_CTRL) & 0xffff0000) == 0 {}
-        *JTAG_UART = c as u32;
+        while (core::ptr::read_volatile(JTAG_CTRL) & 0xffff0000) == 0 {}
+        core::ptr::write_volatile(JTAG_UART, c as u32);
     }
 }
 
