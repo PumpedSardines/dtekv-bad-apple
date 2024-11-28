@@ -34,13 +34,13 @@ pub extern "C" fn main() -> ! {
             rendered_frames += 1;
             io::vga::swap_buffers();
             // Remove some MS due to all the writing code taking some time
-            utils::delay(1000 / 12 - 20);
+            utils::delay(1000 / 24 - 20);
             global_index = 0;
         }
 
         for ci in 0..index {
-            let x = (ci + global_index) / 120;
-            let y = (ci + global_index) % 120;
+            let x = (ci + global_index) % 160;
+            let y = (ci + global_index) / 160;
 
             let x = (x as i32) * 2;
             let y = (y as i32) * 2;

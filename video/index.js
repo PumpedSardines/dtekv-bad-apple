@@ -1,6 +1,7 @@
 const fs = require("fs");
 const path = require("path");
 const sharp = require("sharp");
+const lodash = require("lodash");
 
 // Get all files in the out dir
 const files = fs.readdirSync("./out").sort((a, b) => {
@@ -10,7 +11,7 @@ const files = fs.readdirSync("./out").sort((a, b) => {
 });
 
 function toMax(c) {
-  if (c > 128) return 255;
+  if (c > 50) return 255;
   return 0;
 }
 
@@ -42,43 +43,50 @@ function getStruct(structData) {
   return [(count & 0xff) >> 0, (count & 0xff00) >> 8];
 }
 
-const framesPromise = Promise.all(
-  files.map(async (file) => {
-    const data = await sharp(path.join("./out", file))
-      .raw()
-      .toBuffer();
+const framesPromise = (async () => {
+  const filesChunks = lodash.chunk(files, 10);
+  const final = [];
 
-    const imageData = new Array(160 * 120).fill(0);
+  for (const filesChunk of filesChunks) {
+    const chunkPromise = filesChunk.map(async (file) => {
+      const { data, info } = await sharp(path.join("./out", file))
+        .raw()
+        .toBuffer({ resolveWithObject: true });
 
-    const height = 480;
-    const width = 360;
+      // console.log(info);
 
-    for (let x = 0; x < 160; x++) {
-      for (let y = 0; y < 120; y++) {
-        let final = 0;
+      const imageData = new Array(160 * 120).fill(0);
 
-        for (let cx = 0; cx < 3; cx++) {
-          for (let cy = 0; cy < 3; cy++) {
-            const pixelIndex = ((y * 3 + cy) * width + (x * 3 + cx)) * 3;
-            const r = toMax(data[pixelIndex]); // Red channel
-            const g = toMax(data[pixelIndex + 1]); // Green channel
-            const b = toMax(data[pixelIndex + 2]); // Blue channel
-            const a = (r + g + b) / 3;
-            final += a;
+      for (let x = 0; x < 160; x++) {
+        for (let y = 0; y < 120; y++) {
+          let final = 0;
+
+          for (let cx = 0; cx < 3; cx++) {
+            for (let cy = 0; cy < 3; cy++) {
+              const pixelIndex = ((y * 3 + cy) * info.width + (x * 3 + cx)) * 3;
+              const r = toMax(data[pixelIndex]); // Red channel
+              const g = toMax(data[pixelIndex + 1]); // Green channel
+              const b = toMax(data[pixelIndex + 2]); // Blue channel
+              const a = (r + g + b) / 3;
+              final += a;
+            }
           }
+
+          final /= 9;
+          final = toMax(final);
+
+          imageData[y * 160 + x] = final;
         }
-
-        final /= 9;
-        final = toMax(final);
-        final = toMax(data[(y * width + x) * 8]);
-
-        imageData[y * 160 + x] = final;
       }
-    }
 
-    return imageData;
-  }),
-);
+      return imageData;
+    });
+
+    final.push(...(await Promise.all(chunkPromise)));
+  }
+
+  return final;
+})();
 
 (async () => {
   const frames = await framesPromise;
@@ -92,8 +100,8 @@ const framesPromise = Promise.all(
     let lastI = 0;
     let next = true;
 
-    for (let x = 0; x < 160; x++) {
-      for (let y = 0; y < 120; y++) {
+    for (let y = 0; y < 120; y++) {
+      for (let x = 0; x < 160; x++) {
         let i = y * 160 + x;
         const black = frame[i] === 0;
 
